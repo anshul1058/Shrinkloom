@@ -4,11 +4,14 @@ import { formatBytes, ordinal } from "./components/ui.jsx";
 import InfoModal from "./components/InfoModal.jsx";
 import Merge from "./tools/Merge.jsx";
 import Compress from "./tools/Compress.jsx";
+import Convert from "./tools/Convert.jsx";
 
 const TABS = [
   { id: "image", label: "COMPRESS IMAGE" },
   { id: "pdf", label: "COMPRESS PDF" },
   { id: "merge", label: "MERGE" },
+  { id: "pdf-to-word", label: "PDF → WORD" },
+  { id: "word-to-pdf", label: "WORD → PDF" },
   { id: "history", label: "HISTORY" },
 ];
 
@@ -177,6 +180,8 @@ export default function App() {
           {tab === "image" && <Compress type="image" record={record} />}
           {tab === "pdf" && <Compress type="pdf" record={record} />}
           {tab === "merge" && <Merge record={record} />}
+          {tab === "pdf-to-word" && <Convert record={record} initialDirection="pdf-to-word" />}
+          {tab === "word-to-pdf" && <Convert record={record} initialDirection="word-to-pdf" />}
           {tab === "history" && (
             <HistoryTab history={history} onClear={clearHistory} />
           )}

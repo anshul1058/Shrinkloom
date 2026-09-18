@@ -7,6 +7,7 @@ import { readFile, rm } from "node:fs/promises";
 import { mergePdfs } from "./pdf/merge.js";
 import { compressPdf } from "./pdf/compress.js";
 import { compressImage } from "./image/compress.js";
+import { pdfToWord, wordToPdf } from "./pdf/convert.js";
 import { mergeUpload, singleUpload, uploadErrorHandler, MAX_TOTAL } from "./middleware/upload.js";
 
 const app = express();
@@ -131,6 +132,33 @@ app.post("/api/compress/image", singleUpload, async (req, res) => {
     ok(res, out);
   } catch (e) {
     err(res, { error: { message: "Compression failed: " + e.message, status: 500 } });
+  } finally {
+    await cleanup(req.files);
+  }
+});
+
+/* ── convert: PDF ↔ Word ────────────────────────────────────── */
+app.post("/api/convert/pdf-to-word", singleUpload, async (req, res) => {
+  try {
+    const f = req.file;
+    if (!f) return res.status(400).json({ error: "No file uploaded.", code: "INVALID_REQUEST" });
+    const out = await jobLimit(async () => pdfToWord(await readFile(f.path), f.originalname));
+    ok(res, out);
+  } catch (e) {
+    err(res, { error: { message: e.message, status: e.code || 500 } });
+  } finally {
+    await cleanup(req.files);
+  }
+});
+
+app.post("/api/convert/word-to-pdf", singleUpload, async (req, res) => {
+  try {
+    const f = req.file;
+    if (!f) return res.status(400).json({ error: "No file uploaded.", code: "INVALID_REQUEST" });
+    const out = await jobLimit(async () => wordToPdf(await readFile(f.path), f.originalname));
+    ok(res, out);
+  } catch (e) {
+    err(res, { error: { message: e.message, status: e.code || 500 } });
   } finally {
     await cleanup(req.files);
   }

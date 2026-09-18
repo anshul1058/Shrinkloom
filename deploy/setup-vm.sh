@@ -24,7 +24,7 @@ echo "[2/6] Installing system packages..."
 sudo apt update && sudo apt upgrade -y
 
 curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-sudo apt install -y nodejs ghostscript build-essential libvips-dev nginx
+sudo apt install -y nodejs ghostscript build-essential libvips-dev nginx libreoffice-core libreoffice-writer
 
 sudo npm install -g pm2
 
