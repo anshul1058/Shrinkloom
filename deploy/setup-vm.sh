@@ -24,7 +24,7 @@ echo "[2/6] Installing system packages..."
 sudo apt update && sudo apt upgrade -y
 
 curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-sudo apt install -y nodejs ghostscript build-essential libvips-dev nginx libreoffice-core libreoffice-writer
+sudo apt install -y nodejs ghostscript build-essential libvips-dev nginx libreoffice-core libreoffice-writer python3-venv python3-pip
 
 sudo npm install -g pm2
 
@@ -42,6 +42,11 @@ fi
 # ─── Install dependencies ────────────────────────────────────
 echo "[4/6] Installing dependencies..."
 cd "$APP_DIR/backend" && npm install --production
+
+# Python venv for PDF→Word conversion
+python3 -m venv "$APP_DIR/backend/.venv"
+"$APP_DIR/backend/.venv/bin/pip" install pdf2docx
+
 cd "$APP_DIR/frontend" && npm install && npm run build
 
 # ─── Start with PM2 ──────────────────────────────────────────

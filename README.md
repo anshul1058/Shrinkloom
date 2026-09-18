@@ -2,11 +2,11 @@
 
 # Shrinkloom
 
-**PDF & Image Toolkit — Merge, Compress, Done.**
+**PDF & Image Toolkit — Merge, Compress, Convert, Done.**
 
-A full-stack web app with 3 tools: **Merge PDF**, **Compress PDF**, and **Compress Image**.
+A full-stack web app with 5 tools: **Merge PDF**, **Compress PDF**, **Compress Image**, **PDF → Word**, and **Word → PDF**.
 Built with React 19 + Vite 6 on the frontend, Node.js + Express 5 on the backend.
-Ghostscript for PDF processing, Sharp for image processing.
+Ghostscript for PDF processing, Sharp for image processing, pdf2docx + LibreOffice for conversion.
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-green)
@@ -51,6 +51,16 @@ Ghostscript for PDF processing, Sharp for image processing.
 - Format-aware encoding — PNG stays PNG, WebP stays WebP
 - Early rejection of unsupported/corrupt files via Sharp decode
 
+### PDF → Word
+- Convert PDF to editable DOCX
+- Powered by pdf2docx (Python)
+- Preserves text, layouts, tables, and images
+
+### Word → PDF
+- Convert DOCX/DOC to PDF
+- Powered by LibreOffice headless
+- Preserves formatting, fonts, and layout
+
 ### Security Hardening
 - **Rate limiting**: 30 requests per IP per 15 minutes via `express-rate-limit`
 - **Concurrency cap**: max 3 simultaneous processing jobs via `p-limit`
@@ -75,6 +85,8 @@ Ghostscript for PDF processing, Sharp for image processing.
 | PDF Merge | pdf-lib | 1.17 |
 | PDF Compress | Ghostscript (`gs`) | 10.x |
 | Image Compress | Sharp | 0.35 |
+| PDF → Word | pdf2docx (Python) | 0.5 |
+| Word → PDF | LibreOffice | — |
 | Upload | Multer | 2.0 |
 | Security | Helmet + express-rate-limit + p-limit | latest |
 
@@ -90,9 +102,12 @@ Shrinkloom/
 │   │   ├── middleware/upload.js    # Multer config (500MB/file, 500MB total)
 │   │   ├── pdf/
 │   │   │   ├── merge.js           # pdf-lib merge with order override
-│   │   │   └── compress.js        # Ghostscript PDF compression
+│   │   │   ├── compress.js        # Ghostscript PDF compression
+│   │   │   └── convert.js         # PDF↔Word conversion
 │   │   └── image/
 │   │       └── compress.js        # Sharp image compression
+│   ├── scripts/
+│   │   └── pdf2docx_convert.py    # Python PDF→Word helper
 │   ├── test/smoke.mjs             # Smoke tests
 │   ├── scripts/make-pdf.mjs       # Test PDF fixture generator
 │   └── package.json
@@ -107,20 +122,23 @@ Shrinkloom/
 │   │   │   └── InfoModal.jsx      # Info modal
 │   │   ├── tools/
 │   │   │   ├── Merge.jsx          # Merge PDF page
-│   │   │   └── Compress.jsx       # Compress PDF/Image page
+│   │   │   ├── Compress.jsx       # Compress PDF/Image page
+│   │   │   └── Convert.jsx        # PDF↔Word conversion page
 │   │   └── pages/
 │   │       ├── DocsPage.jsx       # API documentation
 │   │       ├── PrivacyPage.jsx    # Privacy policy
 │   │       └── TermsPage.jsx      # Terms of use
 │   ├── vite.config.js             # Dev proxy /api → :3000
 │   └── package.json
+├── deploy/
+│   └── setup-vm.sh                # One-command VPS setup
 ├── docs/
 │   ├── api.md                     # API contract
 │   ├── architecture.md            # System design
 │   ├── system.md                  # Requirements
 │   ├── tech.md                    # Technology choices
 │   ├── security.md                # Security hardening guide
-│   ├── setup.md                   # Dev setup instructions
+│   ├── setup.md                   # Dev/deploy setup instructions
 │   └── screenshots/               # README screenshots
 └── README.md
 ```
@@ -132,19 +150,24 @@ Shrinkloom/
 ### Prerequisites
 - Node.js >= 18
 - Ghostscript (`gs`) installed and on PATH
+- Python 3 + venv (for PDF→Word)
+- LibreOffice (for Word→PDF, optional on Linux)
 
 ```bash
 # macOS
 brew install ghostscript
+brew install --cask libreoffice
 
 # Ubuntu/Debian
-sudo apt install ghostscript
+sudo apt install ghostscript libreoffice-core libreoffice-writer python3-venv python3-pip
 ```
 
 ### Backend
 
 ```bash
 cd backend
+python3 -m venv .venv
+.venv/bin/pip install pdf2docx
 npm install
 npm run dev          # starts on http://localhost:3000
 ```
@@ -169,8 +192,10 @@ The Vite dev server proxies `/api/*` to the backend automatically.
 | `/api/merge` | POST | Merge multiple PDFs (multipart, `files[]` + optional `order`) |
 | `/api/compress/pdf` | POST | Compress a PDF (multipart, `file` + `profile`) |
 | `/api/compress/image` | POST | Compress an image (multipart, `file` + `profile`) |
+| `/api/convert/pdf-to-word` | POST | Convert PDF to DOCX (multipart, `file`) |
+| `/api/convert/word-to-pdf` | POST | Convert DOCX to PDF (multipart, `file`) |
 
-### Profiles
+### Compression Profiles
 
 | Profile | PDF Behavior | Image Behavior |
 |---|---|---|
@@ -197,7 +222,7 @@ The Vite dev server proxies `/api/*` to the backend automatically.
 | `INVALID_REQUEST` | 400 | Bad params, non-PDF, fewer than 2 files |
 | `UPLOAD_TOO_LARGE` | 413 | Exceeds size limits |
 | `PROCESSING_FAILED` | 422 | Corrupt file, compress failed |
-| `SERVICE_UNAVAILABLE` | 503 | Ghostscript not installed |
+| `SERVICE_UNAVAILABLE` | 503 | Ghostscript or LibreOffice not installed |
 | `RATE_LIMITED` | 429 | Too many requests |
 
 ---
