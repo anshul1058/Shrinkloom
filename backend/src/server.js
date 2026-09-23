@@ -1,4 +1,7 @@
 import express from "express";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { existsSync } from "node:fs";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -166,6 +169,14 @@ app.post("/api/convert/word-to-pdf", singleUpload, async (req, res) => {
 
 /* ── upload error handler ────────────────────────────────────── */
 app.use(uploadErrorHandler);
+
+/* ── serve built frontend when present (single-box deploy) ──── */
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const dist = path.resolve(__dirname, "../../frontend/dist");
+if (existsSync(dist)) {
+  app.use(express.static(dist));
+  app.get(/^\/(?!api\/).*/, (_req, res) => res.sendFile(path.join(dist, "index.html")));
+}
 
 /* ── start ───────────────────────────────────────────────────── */
 app.listen(PORT, () => console.log(`Shrinkloom API on http://localhost:${PORT}`));
