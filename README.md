@@ -184,6 +184,18 @@ The Vite dev server proxies `/api/*` to the backend automatically.
 
 ---
 
+## One-Command Deploy (recovery)
+
+[`deploy/setup-vm.sh`](deploy/setup-vm.sh) rebuilds the entire project on a fresh Ubuntu VM (Oracle Cloud, any Ubuntu/Debian box): installs Node, Ghostscript, LibreOffice, the Python venv + pdf2docx, nginx and PM2; clones the repo; installs dependencies; builds the frontend; writes `.env`; starts the app; and configures nginx. Run it after SSHing into a clean VM:
+
+```bash
+bash -c "curl -fsSL https://raw.githubusercontent.com/anshul1058/Shrinkloom/main/deploy/setup-vm.sh -o /tmp/setup-vm.sh && bash /tmp/setup-vm.sh https://github.com/anshul1058/Shrinkloom.git"
+```
+
+This is the answer to "can I delete the project and get it all back" — yes. The script is designed to run from a bare VM and is the single source of truth for setup. In production the Express server also serves the built frontend (`frontend/dist`) on the same port when present, so one box hosts both API and UI; nginx just proxies port 80 → 3000.
+
+---
+
 ## API Reference
 
 | Endpoint | Method | Description |
